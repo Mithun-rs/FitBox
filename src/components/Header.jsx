@@ -20,9 +20,9 @@ const Header = ({ onMenuClick }) => {
   return (
     <header className="header glass-panel">
       <div className="header-left">
-        {/* <button className="btn-icon mobile-menu-btn" onClick={onMenuClick}>
+         <button className="btn-icon mobile-menu-btn" onClick={onMenuClick}>
           <Menu size={24} />
-        </button> */}
+        </button> 
         {/* <div className="search-bar">
           <Search size={18} className="search-icon" />
           <input type="text" placeholder="Search clients, classes..." className="search-input" />

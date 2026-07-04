@@ -33,46 +33,48 @@ const FeeForm = ({ onClose, onSubmit }) => {
           <h2>Log Payment</h2>
           <button type="button" className="btn-icon" onClick={onClose}><X size={20} /></button>
         </div>
-        <form onSubmit={handleSubmit} className="modal-body">
-          <div className="form-group">
-            <label className="form-label">Client</label>
-            <select required name="clientId" className="form-input" value={formData.clientId} onChange={handleChange}>
-              <option value="" disabled>Select a client</option>
-              {clients.map(client => (
-                <option key={client.id} value={client.id}>{client.name}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">Amount ($)</label>
-            <input required type="number" name="amount" className="form-input" value={formData.amount} onChange={handleChange} placeholder="50" min="0" step="0.01" />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">Payment Date</label>
-            <input required type="date" name="date" className="form-input" value={formData.date} onChange={handleChange} />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">Status</label>
-            <select name="status" className="form-input" value={formData.status} onChange={handleChange}>
-              <option value="Paid">Paid</option>
-              <option value="Pending">Pending</option>
-              <option value="Overdue">Overdue</option>
-            </select>
+        <form onSubmit={handleSubmit} className="modal-form">
+          <div className="modal-body">
+            <div className="form-group">
+              <label className="form-label">Client</label>
+              <select required name="clientId" className="form-input" value={formData.clientId} onChange={handleChange}>
+                <option value="" disabled>Select a client</option>
+                {clients.map(client => (
+                  <option key={client.id} value={client.id}>{client.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Amount ($)</label>
+              <input required type="number" name="amount" className="form-input" value={formData.amount} onChange={handleChange} placeholder="50" min="0" step="0.01" />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Payment Date</label>
+              <input required type="date" name="date" className="form-input" value={formData.date} onChange={handleChange} />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Status</label>
+              <select name="status" className="form-input" value={formData.status} onChange={handleChange}>
+                <option value="Paid">Paid</option>
+                <option value="Pending">Pending</option>
+                <option value="Overdue">Overdue</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Payment Method</label>
+              <select name="paymentMethod" className="form-input" value={formData.paymentMethod} onChange={handleChange}>
+                <option value="Card">Card</option>
+                <option value="Cash">Cash</option>
+                <option value="Transfer">Bank Transfer</option>
+              </select>
+            </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Payment Method</label>
-            <select name="paymentMethod" className="form-input" value={formData.paymentMethod} onChange={handleChange}>
-              <option value="Card">Card</option>
-              <option value="Cash">Cash</option>
-              <option value="Transfer">Bank Transfer</option>
-            </select>
-          </div>
-
-          <div className="modal-footer flex-between mt-4">
+          <div className="modal-footer">
             <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn btn-primary">Save Payment</button>
           </div>

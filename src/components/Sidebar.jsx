@@ -1,9 +1,9 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Activity, Settings, Dumbbell, X, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Users, Activity, Settings, Dumbbell, X, CreditCard, LogOut } from 'lucide-react';
 import './Sidebar.css';
 
-const Sidebar = ({ isOpen, onClose }) => {
+const Sidebar = ({ isOpen, onClose, onLogout }) => {
   return (
     <>
       <div className={`sidebar-overlay ${isOpen ? 'show' : ''}`} onClick={onClose}></div>
@@ -38,11 +38,10 @@ const Sidebar = ({ isOpen, onClose }) => {
       </nav>
 
       <div className="sidebar-footer">
-        {/* <div className="footer-card">
-          <h4>Pro Plan</h4>
-          <p>Get more features</p>
-          <button className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }}>Upgrade</button>
-        </div> */}
+        <button className="btn" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'rgba(255,50,50,0.1)', color: '#ff4d4d', border: '1px solid rgba(255,50,50,0.2)' }} onClick={onLogout}>
+          <LogOut size={18} />
+          <span>Logout</span>
+        </button>
       </div>
     </aside>
     </>

@@ -1,5 +1,7 @@
-import React from 'react';
-import { Users, TrendingUp, Calendar, CreditCard } from 'lucide-react';
+import React, { useState } from 'react';
+import { Users, TrendingUp, Calendar, CreditCard, Plus } from 'lucide-react';
+import { useClients } from '../context/ClientContext';
+import ClientForm from '../components/ClientForm';
 import './Dashboard.css';
 
 const StatCard = ({ title, value, icon: Icon, trend, isPositive }) => (
@@ -22,12 +24,20 @@ const StatCard = ({ title, value, icon: Icon, trend, isPositive }) => (
 );
 
 const Dashboard = () => {
+  const { addClient } = useClients();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
     <div className="dashboard animate-fade-in">
       <div className="hero-section" style={{ backgroundImage: 'linear-gradient(to right, rgba(15, 17, 21, 0.9), rgba(15, 17, 21, 0.4)), url(/hero-bg.png)' }}>
         <div className="hero-content">
           <h1>Welcome back, Admin!</h1>
           <p>Here's what's happening at FitBox today.</p>
+          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
+            <button className="btn btn-primary" onClick={() => setIsModalOpen(true)} style={{ display: 'flex', alignItems: 'center' }}>
+              <Plus size={18} style={{ marginRight: '8px' }} /> Add New Client
+            </button>
+          </div>
         </div>
       </div>
 
@@ -55,6 +65,12 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      {isModalOpen && (
+        <ClientForm 
+          onClose={() => setIsModalOpen(false)} 
+          onSubmit={addClient} 
+        />
+      )}
     </div>
   );
 };

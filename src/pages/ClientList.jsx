@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useClients } from '../context/ClientContext';
-import { Plus, MoreVertical, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, MoreVertical, Edit, Trash2, Eye, Bell, Loader } from 'lucide-react';
 import ClientForm from '../components/ClientForm';
 import ClientDetails from '../components/ClientDetails';
 import './ClientList.css';
 
 const ClientList = () => {
-  const { clients, deleteClient, addClient } = useClients();
+  const { clients, deleteClient, addClient, getNextPaymentDate, fees, sendFeeReminder, sendingReminder } = useClients();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -90,6 +90,15 @@ const ClientList = () => {
                   </td>
                   <td>
                     <div className="actions-cell">
+                      <button 
+                        className="btn-icon" 
+                        onClick={() => sendFeeReminder(client)} 
+                        title="Send Reminder"
+                        disabled={sendingReminder === client.id}
+                        style={{ opacity: sendingReminder === client.id ? 0.5 : 1 }}
+                      >
+                        {sendingReminder === client.id ? <Loader size={16} /> : <Bell size={16} style={{ color: 'var(--warning, #f59e0b)' }} />}
+                      </button>
                       <button className="btn-icon" onClick={() => setSelectedClient(client)} title="View Profile"><Eye size={16} /></button>
                       <button className="btn-icon"><Edit size={16} /></button>
                       <button className="btn-icon" onClick={() => deleteClient(client.id)}><Trash2 size={16} className="text-danger" /></button>

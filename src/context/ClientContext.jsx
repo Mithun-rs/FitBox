@@ -143,35 +143,27 @@ export const ClientProvider = ({ children }) => {
 
   const [sendingReminder, setSendingReminder] = useState(null);
 
-  const sendFeeReminder = async (client) => {
-    try {
-      setSendingReminder(client.id);
-      
-      const dueDate = getNextPaymentDate(client.id);
-      
-      const clientFees = fees.filter(f => f.client_id === client.id || f.clientId === client.id);
-      clientFees.sort((a, b) => new Date(b.date) - new Date(a.date));
-      const feeAmount = clientFees.length > 0 ? clientFees[0].amount : 0;
+  const sendFeeReminder = (client) => {
+    setSendingReminder(client.id);
 
-      const { data, error } = await supabase.functions.invoke('fee-reminder', {
-        body: {
-          name: client.name,
-          phone: client.phone,
-          due_date: dueDate || 'TBD',
-          fee_amount: feeAmount
-        }
-      });
+    const dueDate = getNextPaymentDate(client.id);
 
-      if (error) throw error;
-      if (data && data.error) throw new Error(data.error);
-      
-      alert(`Reminder sent to ${client.name} successfully!`);
-    } catch (err) {
-      console.error("Error sending reminder:", err);
-      alert(`Failed to send reminder: ${err.message}`);
-    } finally {
-      setSendingReminder(null);
-    }
+    const clientFees = fees.filter(f => f.client_id === client.id || f.clientId === client.id);
+    clientFees.sort((a, b) => new Date(b.date) - new Date(a.date));
+    const feeAmount = clientFees.length > 0 ? clientFees[0].amount : 0;
+
+    // Clean phone number and add India country code if missing
+    const cleanPhone = (client.phone || '').replace(/\D/g, '');
+    const toPhone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone}`;
+
+    // Same message format as before
+    const message = `Hello ${client.name},\n\nThis is a friendly reminder that your gym fee of ₹${feeAmount} is due on ${dueDate || 'TBD'}. Please make the payment at your earliest convenience.\n\nThank you!\nFitBox Gym`;
+
+    // Open WhatsApp with pre-filled message — user sends it manually
+    const whatsappUrl = `https://wa.me/${toPhone}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+
+    setSendingReminder(null);
   };
 
   return (

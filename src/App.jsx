@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import ClientList from './pages/ClientList';
 import FeeManagement from './pages/FeeManagement';
 import Login from './pages/Login';
+import Settings from './pages/Settings';
 import { ClientProvider } from './context/ClientContext';
 
 const App = () => {
@@ -39,6 +40,7 @@ const App = () => {
               <Route path="/" element={<Dashboard />} />
               <Route path="/clients" element={<ClientList />} />
               <Route path="/fees" element={<FeeManagement />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="*" element={
                 <div className="animate-fade-in" style={{ padding: '2rem', textAlign: 'center' }}>
                   <h2 className="text-gradient">Module Coming Soon</h2>

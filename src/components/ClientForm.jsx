@@ -2,10 +2,15 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import './ClientForm.css';
 
-const ClientForm = ({ onClose, onSubmit }) => {
+const ClientForm = ({ onClose, onSubmit, existingClient }) => {
   const [formData, setFormData] = useState({
-    name: '', email: '', phone: '', plan: 'Basic'
+    name: existingClient?.name || '',
+    email: existingClient?.email || '',
+    phone: existingClient?.phone || '',
+    plan: existingClient?.plan || 'Basic'
   });
+
+  const isEditing = !!existingClient;
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -19,7 +24,7 @@ const ClientForm = ({ onClose, onSubmit }) => {
     <div className="modal-overlay">
       <div className="modal-content glass-panel animate-fade-in">
         <div className="modal-header">
-          <h2>Add New Client</h2>
+          <h2>{isEditing ? 'Edit Client' : 'Add New Client'}</h2>
           <button type="button" className="btn-icon" onClick={onClose}><X size={20} /></button>
         </div>
         <form onSubmit={handleSubmit} className="modal-form">
@@ -47,7 +52,9 @@ const ClientForm = ({ onClose, onSubmit }) => {
           </div>
           <div className="modal-footer">
             <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary">Save Client</button>
+            <button type="submit" className="btn btn-primary">
+              {isEditing ? 'Save Changes' : 'Save Client'}
+            </button>
           </div>
         </form>
       </div>

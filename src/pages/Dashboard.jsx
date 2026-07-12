@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, TrendingUp, Calendar, CreditCard, Plus, Bell, Loader, X } from 'lucide-react';
+import { Users, Calendar, CreditCard, Plus, Bell, Loader, X } from 'lucide-react';
 import { useClients } from '../context/ClientContext';
 import ClientForm from '../components/ClientForm';
 import './Dashboard.css';
@@ -32,8 +32,26 @@ const ReminderRow = ({ client, getNextPaymentDate, sendFeeReminder, sendingRemin
     <div className="activity-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '1rem' }}>
       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flex: 1, minWidth: 0 }}>
         <div className="activity-dot" style={{ backgroundColor: isOverdue ? 'var(--danger)' : 'var(--warning)', marginTop: 0, flexShrink: 0 }}></div>
-        <div className="activity-text" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          <p className="strong" style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{client.name}</p>
+        <div className="activity-text" style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <p className="strong" style={{ margin: 0 }}>{client.name}</p>
+            {client.member_id && (
+              <span style={{
+                fontFamily: 'Courier New, monospace',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                color: 'var(--accent-neon)',
+                background: 'rgba(0,255,136,0.07)',
+                border: '1px solid rgba(0,255,136,0.25)',
+                borderRadius: '5px',
+                padding: '0.1rem 0.45rem',
+                letterSpacing: '0.04em',
+                whiteSpace: 'nowrap'
+              }}>
+                {client.member_id}
+              </span>
+            )}
+          </div>
           <p className="text-sm text-muted" style={{ margin: 0 }}>
             Due: {dueDate} {isOverdue ? `(Overdue by ${Math.abs(diffDays)} days)` : `(In ${diffDays} days)`}
           </p>
@@ -62,25 +80,51 @@ const ReminderRow = ({ client, getNextPaymentDate, sendFeeReminder, sendingRemin
 };
 
 const Dashboard = () => {
-  const { clients, addClient, getNextPaymentDate, sendFeeReminder, sendingReminder } = useClients();
+  const { clients, fees, addClient, getNextPaymentDate, sendFeeReminder, sendingReminder } = useClients();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRemindersModalOpen, setIsRemindersModalOpen] = useState(false);
+
+  // Real stats
+  const totalMembers = clients.length;
+  const activeMembers = clients.filter(c => c.status === 'Active').length;
+
+  const now = new Date();
+  const thisMonth = now.getMonth();
+  const thisYear = now.getFullYear();
+  const monthlyRevenue = fees
+    .filter(f => {
+      const d = new Date(f.date);
+      return d.getMonth() === thisMonth && d.getFullYear() === thisYear && f.status === 'Paid';
+    })
+    .reduce((sum, f) => sum + Number(f.amount || 0), 0);
+
+  // Real recent activity — last 4 paid fees
+  const recentActivity = [...fees]
+    .filter(f => f.status === 'Paid')
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 4);
+
+  const getClientName = (clientId) => {
+    const c = clients.find(cl => cl.id === clientId || cl.id === (clientId));
+    return c ? c.name : 'Unknown';
+  };
 
   const upcomingReminders = clients.filter(client => {
     const dueDate = getNextPaymentDate(client.id);
     if (!dueDate) return false;
     const diffTime = new Date(dueDate) - new Date();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    // Due date exceeded (diffDays <= 0) or within 3 days (diffDays <= 3)
     return diffDays <= 3;
   }).sort((a, b) => new Date(getNextPaymentDate(a.id)) - new Date(getNextPaymentDate(b.id)));
 
+  const gymName = localStorage.getItem('settings_gym_name') || 'FitBox';
+
   return (
     <div className="dashboard animate-fade-in">
-      <div className="hero-section" style={{ backgroundImage: 'linear-gradient(to right, rgba(15, 17, 21, 0.9), rgba(15, 17, 21, 0.4)), url(/hero-bg.png)' }}>
+      <div className="hero-section" style={{ backgroundImage: 'linear-gradient(to right, rgba(15,17,21,0.92) 30%, rgba(15,17,21,0.55) 100%), url(/hero-bg.png)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <div className="hero-content">
           <h1>Welcome back, Admin!</h1>
-          <p>Here's what's happening at FitBox today.</p>
+          <p>Here's what's happening at {gymName} today.</p>
           <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
             <button className="btn btn-primary" onClick={() => setIsModalOpen(true)} style={{ display: 'flex', alignItems: 'center' }}>
               <Plus size={18} style={{ marginRight: '8px' }} /> Add New Client
@@ -90,23 +134,27 @@ const Dashboard = () => {
       </div>
 
       <div className="stats-grid">
-        <StatCard title="Total Members" value="1,248" icon={Users} trend="12" isPositive={true} />
-        <StatCard title="Monthly Revenue" value="$42,500" icon={CreditCard} trend="2" isPositive={true} />
+        <StatCard title="Total Members" value={totalMembers} icon={Users} />
+        <StatCard title="Active Members" value={activeMembers} icon={Calendar} trend={totalMembers > 0 ? Math.round((activeMembers/totalMembers)*100) : 0} isPositive={true} />
+        <StatCard title="Monthly Revenue" value={`₹${monthlyRevenue.toLocaleString('en-IN')}`} icon={CreditCard} />
       </div>
 
       <div className="dashboard-content" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
         <div className="recent-activity glass-panel">
           <div className="flex-between mb-4">
             <h2>Recent Activity</h2>
-            <button className="btn btn-outline btn-sm">View All</button>
           </div>
           <div className="activity-list">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="activity-item">
-                <div className="activity-dot"></div>
+            {recentActivity.length === 0 ? (
+              <p className="text-muted" style={{ padding: '1rem 0' }}>No payment activity yet.</p>
+            ) : recentActivity.map((fee) => (
+              <div key={fee.id} className="activity-item">
+                <div className="activity-dot" style={{ backgroundColor: 'var(--success)' }}></div>
                 <div className="activity-text">
-                  <p className="strong">New member registered</p>
-                  <p className="text-sm text-muted">John Doe joined the Pro Plan • 2 hours ago</p>
+                  <p className="strong">Payment received</p>
+                  <p className="text-sm text-muted">
+                    {getClientName(fee.clientId || fee.client_id)} paid ₹{Number(fee.amount).toLocaleString('en-IN')} • {fee.date}
+                  </p>
                 </div>
               </div>
             ))}
@@ -135,6 +183,7 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
       {isModalOpen && (
         <ClientForm 
           onClose={() => setIsModalOpen(false)} 

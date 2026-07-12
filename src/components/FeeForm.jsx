@@ -14,8 +14,8 @@ const FeeForm = ({ onClose, onSubmit }) => {
   });
 
   const handleChange = (e) => {
-    const value = e.target.name === 'clientId' || e.target.name === 'amount' 
-      ? Number(e.target.value) 
+    const value = e.target.name === 'amount'
+      ? Number(e.target.value)
       : e.target.value;
     setFormData({ ...formData, [e.target.name]: value });
   };

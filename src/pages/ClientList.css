@@ -42,7 +42,52 @@
   gap: 0.5rem;
 }
 
+.member-id-badge {
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent-neon);
+  background: rgba(0, 255, 136, 0.07);
+  border: 1px solid rgba(0, 255, 136, 0.25);
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+
+/* Expiry column */
+.expiry-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.expiry-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.badge-expired {
+  background: rgba(255, 71, 87, 0.12);
+  color: var(--danger);
+  border: 1px solid rgba(255, 71, 87, 0.35);
+}
+
+.badge-expiring-soon {
+  background: rgba(255, 165, 2, 0.12);
+  color: #ffa502;
+  border: 1px solid rgba(255, 165, 2, 0.35);
+}
+
+.badge-active-expiry {
+  background: rgba(46, 213, 115, 0.07);
+  color: var(--success);
+  border: 1px solid rgba(46, 213, 115, 0.2);
+}
+
 @media (max-width: 768px) {
+
   .page-header.flex-between {
     flex-direction: column !important;
     align-items: stretch !important;

@@ -1,5 +1,13 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import { db } from '../firebaseClient';
+import {
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc
+} from 'firebase/firestore';
 
 const ClientContext = createContext();
 
@@ -15,102 +23,116 @@ export const ClientProvider = ({ children }) => {
   }, []);
 
   const fetchClients = async () => {
-    const { data, error } = await supabase.from('clients').select('*');
-    if (error) console.error("Error fetching clients:", error);
-    else {
-      const mappedData = data.map(client => ({
-        ...client,
-        joinDate: client.joinDate || client.join_date
-      }));
-      setClients(mappedData);
+    try {
+      const snapshot = await getDocs(collection(db, 'clients'));
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      console.log('Loaded clients:', data.map(c => ({ id: c.id, name: c.name, member_id: c.member_id })));
+
+      // Backfill member_id for clients that don't have one yet (in-memory only)
+      let counter = 1;
+      const withIds = data.map(client => {
+        if (client.member_id) return client;
+        const id = `FBX-${String(counter++).padStart(4, '0')}`;
+        return { ...client, member_id: id };
+      });
+      setClients(withIds);
+    } catch (error) {
+      console.error("Error fetching clients:", error);
     }
   };
 
   const fetchFees = async () => {
-    const { data, error } = await supabase.from('fees').select('*');
-    if (error) console.error("Error fetching fees:", error);
-    else {
-      const mappedData = data.map(fee => ({
-        ...fee,
-        clientId: fee.clientId || fee.client_id,
-        paymentMethod: fee.paymentMethod || fee.payment_method
-      }));
-      setFees(mappedData);
+    try {
+      const snapshot = await getDocs(collection(db, 'fees'));
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      console.log('Loaded fees:', data.map(f => ({ id: f.id, clientId: f.clientId, amount: f.amount })));
+      setFees(data);
+    } catch (error) {
+      console.error("Error fetching fees:", error);
     }
   };
 
+  const generateMemberId = (existingClients) => {
+    // Find the highest existing FBX number
+    const nums = existingClients
+      .map(c => c.member_id)
+      .filter(id => id && id.startsWith('FBX-'))
+      .map(id => parseInt(id.replace('FBX-', ''), 10))
+      .filter(n => !isNaN(n));
+    const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+    return `FBX-${String(next).padStart(4, '0')}`;
+  };
+
   const addClient = async (client) => {
-    const newClient = { ...client, status: 'Active', joinDate: new Date().toISOString().split('T')[0] };
-    const { data, error } = await supabase.from('clients').insert([newClient]).select();
-    if (error) {
+    try {
+      const member_id = generateMemberId(clients);
+      const newClient = {
+        ...client,
+        member_id,
+        status: 'Active',
+        joinDate: new Date().toISOString().split('T')[0]
+      };
+      const docRef = await addDoc(collection(db, 'clients'), newClient);
+      setClients(prev => [...prev, { id: docRef.id, ...newClient }]);
+    } catch (error) {
       console.error("Error adding client:", error);
-    } else if (data) {
-      setClients([...clients, { ...data[0], joinDate: data[0].joinDate || data[0].join_date }]);
     }
   };
 
   const updateClient = async (id, updatedClient) => {
-    const { data, error } = await supabase.from('clients').update(updatedClient).eq('id', id).select();
-    if (error) {
+    try {
+      await updateDoc(doc(db, 'clients', id), updatedClient);
+      setClients(prev =>
+        prev.map(c => c.id === id ? { ...c, ...updatedClient } : c)
+      );
+    } catch (error) {
       console.error("Error updating client:", error);
-    } else if (data) {
-      setClients(clients.map(c => c.id === id ? { ...data[0], joinDate: data[0].joinDate || data[0].join_date } : c));
     }
   };
 
   const deleteClient = async (id) => {
-    const { error } = await supabase.from('clients').delete().eq('id', id);
-    if (error) {
+    try {
+      await deleteDoc(doc(db, 'clients', id));
+      setClients(prev => prev.filter(c => c.id !== id));
+    } catch (error) {
       console.error("Error deleting client:", error);
-    } else {
-      setClients(clients.filter(c => c.id !== id));
     }
   };
 
   const addFee = async (fee) => {
-    const dbFee = { ...fee };
-    if (dbFee.clientId) {
-      dbFee.client_id = dbFee.clientId;
-      delete dbFee.clientId;
-    }
-    const { data, error } = await supabase.from('fees').insert([dbFee]).select();
-    if (error) {
-      console.error("Error adding fee:", error);
-    } else if (data) {
-      const insertedFee = {
-        ...data[0],
-        clientId: data[0].clientId || data[0].client_id,
-        paymentMethod: data[0].paymentMethod || data[0].payment_method
+    try {
+      // Attach client name and member_id to the fee so we never need a lookup
+      const client = clients.find(c => c.id === fee.clientId);
+      const enrichedFee = {
+        ...fee,
+        clientName: client?.name || '',
+        member_id: client?.member_id || ''
       };
-      setFees([...fees, insertedFee]);
+      const docRef = await addDoc(collection(db, 'fees'), enrichedFee);
+      setFees(prev => [...prev, { id: docRef.id, ...enrichedFee }]);
+    } catch (error) {
+      console.error("Error adding fee:", error);
     }
   };
 
+
   const updateFee = async (id, updatedFee) => {
-    const dbFee = { ...updatedFee };
-    if (dbFee.clientId) {
-      dbFee.client_id = dbFee.clientId;
-      delete dbFee.clientId;
-    }
-    const { data, error } = await supabase.from('fees').update(dbFee).eq('id', id).select();
-    if (error) {
+    try {
+      await updateDoc(doc(db, 'fees', id), updatedFee);
+      setFees(prev =>
+        prev.map(f => f.id === id ? { ...f, ...updatedFee } : f)
+      );
+    } catch (error) {
       console.error("Error updating fee:", error);
-    } else if (data) {
-      const updatedData = {
-        ...data[0],
-        clientId: data[0].clientId || data[0].client_id,
-        paymentMethod: data[0].paymentMethod || data[0].payment_method
-      };
-      setFees(fees.map(f => f.id === id ? updatedData : f));
     }
   };
 
   const deleteFee = async (id) => {
-    const { error } = await supabase.from('fees').delete().eq('id', id);
-    if (error) {
+    try {
+      await deleteDoc(doc(db, 'fees', id));
+      setFees(prev => prev.filter(f => f.id !== id));
+    } catch (error) {
       console.error("Error deleting fee:", error);
-    } else {
-      setFees(fees.filter(f => f.id !== id));
     }
   };
 
@@ -124,9 +146,11 @@ export const ClientProvider = ({ children }) => {
     const client = clients.find(c => c.id === clientId);
     if (!client) return null;
 
-    const clientFees = fees.filter(f => (f.client_id === clientId || f.clientId === clientId) && f.status === 'Paid');
+    const clientFees = fees.filter(f =>
+      (f.client_id === clientId || f.clientId === clientId) && f.status === 'Paid'
+    );
     let baseDate;
-    
+
     if (clientFees.length > 0) {
       clientFees.sort((a, b) => new Date(b.date) - new Date(a.date));
       baseDate = new Date(clientFees[0].date);
@@ -137,7 +161,7 @@ export const ClientProvider = ({ children }) => {
     const durationMonths = planDurations[client.plan] || 1;
     const nextDate = new Date(baseDate);
     nextDate.setMonth(nextDate.getMonth() + durationMonths);
-    
+
     return nextDate.toISOString().split('T')[0];
   };
 
@@ -156,8 +180,17 @@ export const ClientProvider = ({ children }) => {
     const cleanPhone = (client.phone || '').replace(/\D/g, '');
     const toPhone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone}`;
 
-    // Same message format as before
-    const message = `Hello ${client.name},\n\nThis is a friendly reminder that your gym fee of ₹${feeAmount} is due on ${dueDate || 'TBD'}. Please make the payment at your earliest convenience.\n\nThank you!\nFitBox Gym`;
+    // Read settings from localStorage (set in Settings page)
+    const gymName = localStorage.getItem('settings_gym_name') || 'FitBox Gym';
+    const template = localStorage.getItem('settings_msg_template') ||
+      `Hello {name},\n\nThis is a friendly reminder that your gym fee of ₹{fee_amount} is due on {due_date}. Please make the payment at your earliest convenience.\n\nThank you!\n{gym_name}`;
+
+    // Replace placeholders with actual values
+    const message = template
+      .replace(/{name}/g, client.name)
+      .replace(/{fee_amount}/g, feeAmount)
+      .replace(/{due_date}/g, dueDate || 'TBD')
+      .replace(/{gym_name}/g, gymName);
 
     // Open WhatsApp with pre-filled message — user sends it manually
     const whatsappUrl = `https://wa.me/${toPhone}?text=${encodeURIComponent(message)}`;
@@ -167,7 +200,7 @@ export const ClientProvider = ({ children }) => {
   };
 
   return (
-    <ClientContext.Provider value={{ 
+    <ClientContext.Provider value={{
       clients, addClient, updateClient, deleteClient,
       fees, addFee, updateFee, deleteFee,
       getNextPaymentDate,
@@ -177,4 +210,3 @@ export const ClientProvider = ({ children }) => {
     </ClientContext.Provider>
   );
 };
-

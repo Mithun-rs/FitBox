@@ -5,20 +5,17 @@ import FeeForm from '../components/FeeForm';
 import './FeeManagement.css';
 
 const FeeManagement = () => {
-  const { fees, clients, deleteFee, addFee } = useClients();
+  const { fees, deleteFee, addFee } = useClients();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Map clientId to client name
-  const getClientName = (clientId) => {
-    const client = clients.find(c => c.id === clientId);
-    return client ? client.name : 'Unknown Client';
-  };
-
   const filteredFees = fees.filter(fee => {
-    const clientName = getClientName(fee.clientId).toLowerCase();
-    const matchesSearch = clientName.includes(searchTerm.toLowerCase());
+    const clientName = (fee.clientName || '').toLowerCase();
+    const memberId = (fee.member_id || '').toLowerCase();
+    const matchesSearch =
+      clientName.includes(searchTerm.toLowerCase()) ||
+      memberId.includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || fee.status.toLowerCase() === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
   }).sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -85,8 +82,13 @@ const FeeManagement = () => {
               {filteredFees.map(fee => (
                 <tr key={fee.id}>
                   <td>
-                    <div className="member-cell">
-                      <span className="strong">{getClientName(fee.clientId)}</span>
+                    <div className="member-cell" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '3px' }}>
+                      <span className="strong">{fee.clientName || 'Unknown Client'}</span>
+                      {fee.member_id && (
+                        <span className="member-id-badge" style={{ fontSize: '0.7rem' }}>
+                          {fee.member_id}
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td>
